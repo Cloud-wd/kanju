@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>kanju.ai 配置生成器（手机端）</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f6fa;margin:0;padding:18px;color:#222}
+  .card{max-width:640px;margin:0 auto;background:#fff;border-radius:14px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+  h2{margin:0 0 4px}
+  .sub{color:#777;font-size:13px;margin-bottom:16px;line-height:1.6}
+  label{display:block;margin:14px 0 6px;font-weight:600;font-size:14px}
+  input[type=text],input[type=password]{width:100%;padding:11px 12px;border:1px solid #d9dbe3;border-radius:9px;font-size:15px}
+  .row{display:flex;align-items:center;gap:8px;margin:16px 0}
+  .row label{margin:0}
+  button{background:#2d6cdf;color:#fff;border:0;padding:13px 18px;border-radius:9px;font-size:15px;width:100%;cursor:pointer;margin-top:6px}
+  button.ghost{background:#eef1f6;color:#2d6cdf}
+  .out{margin-top:16px}
+  textarea{width:100%;height:160px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;padding:10px;border:1px solid #d9dbe3;border-radius:9px;resize:vertical}
+  .tip{background:#f0f4ff;border-left:3px solid #2d6cdf;padding:11px 13px;border-radius:7px;font-size:13px;color:#444;line-height:1.7;margin:14px 0}
+  .tip b{color:#1a3a82}
+  code{background:#eef1f6;padding:2px 6px;border-radius:4px;font-size:12px}
+  .step{font-size:13px;line-height:1.8;color:#333}
+  .step li{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>kanju.ai 配置生成器</h2>
+  <div class="sub">在手机浏览器里打开本页，填好信息即可生成可直接导入 TVBox / 影视仓 的配置。换账号时重新填、重新生成即可，<b>全程不需要家里的电脑</b>。</div>
+
+  <label>spider.js 托管网址（一次性）</label>
+  <input type="text" id="spider" placeholder="https://你的托管地址/spider.js">
+  <div class="sub" style="margin-top:6px">把随附的 <code>spider.js</code> 传到任意能直链访问的地方（见下方“如何托管”），把它的网址填这里。这个地址一般不用改。</div>
+
+  <label>kanju.ai 账号（邮箱）</label>
+  <input type="text" id="email" value="tianweiwd@qq.com">
+
+  <label>kanju.ai 密码</label>
+  <input type="password" id="password" value="Qetuo2012@" autocomplete="new-password">
+
+  <label>站点显示名</label>
+  <input type="text" id="siteName" value="看剧AI">
+
+  <div class="row">
+    <input type="checkbox" id="realMode">
+    <label for="realMode">启用真实接口（已按抓包填好 spider.js 后勾选）</label>
+  </div>
+
+  <button onclick="gen()">生成配置并下载 config.json</button>
+  <button class="ghost" onclick="copy()">复制配置文本</button>
+
+  <div class="out">
+    <label>生成的 config.json（可直接用）</label>
+    <textarea id="out" readonly></textarea>
+  </div>
+
+  <div class="tip">
+    <b>怎么用生成的文件：</b>
+    <ol class="step">
+      <li>点“生成配置并下载 config.json”，手机会下载一个 <code>config.json</code> 文件。</li>
+      <li>把 <code>config.json</code> 传到手机能访问的地方（或直接用文件管理器选中它）。</li>
+      <li>TVBox：设置 → 配置地址 → 选“本地/文件”导入这个 <code>config.json</code>；或把它也托管成网址后填网址。</li>
+      <li>影视仓：首页右上角 <code>+</code> → 添加 → 选文件导入 / 或填配置网址。</li>
+    </ol>
+  </div>
+
+  <div class="tip">
+    <b>如何免费托管 spider.js（只做一次）：</b>
+    <ol class="step">
+      <li><b>GitHub（推荐，永久免费）</b>：手机/电脑打开 github.com 新建一个仓库，把 <code>spider.js</code> 传上去；在文件页面点 “Raw”，复制那个 <code>https://raw.githubusercontent.com/...</code> 网址，填到上面的“spider.js 托管网址”。</li>
+      <li>或用任意支持“直链/原始文件”的网盘 / 静态托管（jsDelivr、Vercel、Cloudflare Pages 等）。</li>
+    </ol>
+    注意：spider.js 只在 kanju.ai 改版时才需要动；平时换账号<b>只重新生成 config.json 即可</b>。
+  </div>
+</div>
+
+<script>
+function buildConfig(){
+  var spider = document.getElementById('spider').value.trim();
+  var email = document.getElementById('email').value.trim();
+  var pwd = document.getElementById('password').value;
+  var name = document.getElementById('siteName').value.trim() || '看剧AI';
+  var real = document.getElementById('realMode').checked;
+  if(!spider){ alert('请先填写 spider.js 的托管网址'); return null; }
+  var cfg = {
+    spider: spider,
+    sites: [{
+      key: 'kanju',
+      name: name,
+      type: 3,
+      api: '',
+      searchable: 1,
+      quickSearch: 1,
+      filterable: 1,
+      ext: JSON.stringify({
+        kanjuEmail: email,
+        kanjuPassword: pwd,
+        realMode: real,
+        ua: 'Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile'
+      })
+    }]
+  };
+  return JSON.stringify(cfg, null, 2);
+}
+
+function gen(){
+  var txt = buildConfig();
+  if(!txt) return;
+  document.getElementById('out').value = txt;
+  // 下载
+  var blob = new Blob([txt], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'config.json';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+function copy(){
+  var txt = buildConfig();
+  if(!txt) return;
+  document.getElementById('out').value = txt;
+  var ta = document.getElementById('out');
+  ta.select();
+  try { document.execCommand('copy'); alert('已复制配置文本'); }
+  catch(e){ if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){alert('已复制配置文本')}); } }
+}
+</script>
+</body></html>
